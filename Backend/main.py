@@ -159,77 +159,57 @@ def create_qr_code(data: dict):
 
 
 def generate_id_card(user: User, db_user: User):
-    # Create PDF buffer
     buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=(3.375 * inch, 2.125 * inch))
 
-    # Create PDF with reportlab
-    p = canvas.Canvas(
-        buffer, pagesize=(3.375 * inch, 2.125 * inch)
-    )  # Standard ID card size
+    # Background gradient (simulate with two rectangles)
+    p.setFillColorRGB(0.85, 0.97, 0.90)
+    p.roundRect(0, 0, 3.375 * inch, 2.125 * inch, 12, fill=1, stroke=0)
+    p.setFillColorRGB(0.16, 0.64, 0.36)
+    p.roundRect(
+        0, 2.0 * inch, 3.375 * inch, 0.2 * inch, 12, fill=1, stroke=0
+    )  # Header bar
 
-    # Card background (green theme like NIN)
-    p.setFillColorRGB(0.8, 0.95, 0.8)
-    p.rect(0, 0, 3.375 * inch, 2.125 * inch, fill=1)
+    # Logo
+    logo_path = "logo.png"  # Place logo.png in your Backend folder
+    if os.path.exists(logo_path):
+        p.drawImage(
+            logo_path,
+            0.15 * inch,
+            1.85 * inch,
+            width=0.35 * inch,
+            height=0.35 * inch,
+            mask="auto",
+        )
 
-    # Header
-    p.setFillColorRGB(0, 0.5, 0)
-    p.setFont("Helvetica-Bold", 8)
-    p.drawString(0.1 * inch, 1.9 * inch, "FIRSTCARE HEALTH PARTNERS")
+    # Organization Name
+    p.setFont("Helvetica-Bold", 10)
+    p.setFillColorRGB(1, 1, 1)
+    p.drawString(0.55 * inch, 2.03 * inch, "FIRSTCARE HEALTH PARTNERS")
 
-    p.setFont("Helvetica", 6)
-    p.drawString(0.1 * inch, 1.8 * inch, "DIGITAL MEMBER SLIP")
+    # Card Title
+    p.setFont("Helvetica", 7)
+    p.setFillColorRGB(0.16, 0.64, 0.36)
+    p.drawString(0.15 * inch, 1.75 * inch, "DIGITAL MEMBER ID CARD")
 
-    # User photo placeholder (if photo exists)
+    # Photo
     if user.photo_path and os.path.exists(user.photo_path):
         try:
             img = Image.open(user.photo_path)
-            img = img.resize((60, 80))
+            img = img.resize((80, 100))
             img_buffer = io.BytesIO()
             img.save(img_buffer, format="PNG")
             img_buffer.seek(0)
             p.drawImage(
                 ImageReader(img_buffer),
-                0.1 * inch,
-                1.2 * inch,
-                width=0.6 * inch,
-                height=0.8 * inch,
+                0.15 * inch,
+                0.95 * inch,
+                width=0.8 * inch,
+                height=1.0 * inch,
+                mask="auto",
             )
-        except:
+        except Exception as e:
             pass
-
-    # User details
-    p.setFillColorRGB(0, 0, 0)
-    p.setFont("Helvetica-Bold", 7)
-    p.drawString(0.8 * inch, 1.7 * inch, f"{user.last_name.upper()}")
-
-    p.setFont("Helvetica", 6)
-    p.drawString(
-        0.8 * inch, 1.6 * inch, f"{user.first_name} {user.middle_name or ''}".upper()
-    )
-
-    p.drawString(0.8 * inch, 1.5 * inch, f"DOB: {user.date_of_birth}")
-    p.drawString(0.8 * inch, 1.4 * inch, f"SEX: {user.sex}")
-    p.drawString(0.8 * inch, 1.3 * inch, f"PHONE: {user.phone_number}")
-
-    # Registration details
-    p.setFont("Helvetica-Bold", 6)
-    p.drawString(0.1 * inch, 1.0 * inch, f"Registration ID: {user.registration_id}")
-    p.drawString(
-        0.1 * inch, 0.9 * inch, f"Issue Date: {user.issue_date.strftime('%d %b %Y')}"
-    )
-    p.drawString(0.1 * inch, 0.8 * inch, f"Zone: {user.zone}")
-    p.drawString(0.1 * inch, 0.7 * inch, f"Unit: {user.unit}")
-
-    # Status
-    status_color = "green" if user.registration_fee_paid else "red"
-    p.setFillColorRGB(
-        0 if status_color == "green" else 1, 1 if status_color == "green" else 0, 0
-    )
-    p.drawString(
-        0.1 * inch,
-        0.6 * inch,
-        f"Status: {'ACTIVE' if user.registration_fee_paid else 'PENDING'}",
-    )
 
     # QR Code
     qr_data = {
@@ -239,40 +219,57 @@ def generate_id_card(user: User, db_user: User):
         "status": "active" if user.registration_fee_paid else "pending",
         "issue_date": user.issue_date.isoformat(),
     }
-
     qr_buffer = create_qr_code(qr_data)
     p.drawImage(
         ImageReader(qr_buffer),
-        2.7 * inch,
-        1.2 * inch,
-        width=0.6 * inch,
-        height=0.6 * inch,
+        2.4 * inch,
+        0.95 * inch,
+        width=0.8 * inch,
+        height=0.8 * inch,
+        mask="auto",
     )
 
-    # Back side (new page)
-    p.showPage()
-    p.setFillColorRGB(0.8, 0.95, 0.8)
-    p.rect(0, 0, 3.375 * inch, 2.125 * inch, fill=1)
+    # Member Info
+    p.setFont("Helvetica-Bold", 9)
+    p.setFillColorRGB(0.16, 0.64, 0.36)
+    p.drawString(
+        1.05 * inch,
+        1.7 * inch,
+        f"{user.last_name.upper()} {user.first_name} {user.middle_name or ''}".strip(),
+    )
 
-    p.setFillColorRGB(0, 0.5, 0)
-    p.setFont("Helvetica-Bold", 8)
-    p.drawString(0.1 * inch, 1.9 * inch, "MEMBER INFORMATION")
-
+    p.setFont("Helvetica", 7)
     p.setFillColorRGB(0, 0, 0)
-    p.setFont("Helvetica", 6)
-    p.drawString(0.1 * inch, 1.7 * inch, f"Address: {user.address}")
-    p.drawString(0.1 * inch, 1.6 * inch, f"State: {user.state}")
-    p.drawString(0.1 * inch, 1.5 * inch, f"LGA: {user.lga}")
-    p.drawString(0.1 * inch, 1.4 * inch, f"Emergency: {user.emergency_contact_name}")
-    p.drawString(0.1 * inch, 1.3 * inch, f"Phone: {user.emergency_contact_phone}")
+    p.drawString(1.05 * inch, 1.55 * inch, f"Reg ID: {user.registration_id}")
+    p.drawString(1.05 * inch, 1.45 * inch, f"DOB: {user.date_of_birth}")
+    p.drawString(
+        1.05 * inch, 1.35 * inch, f"Sex: {user.sex}   Phone: {user.phone_number}"
+    )
+    p.drawString(1.05 * inch, 1.25 * inch, f"NIN: {user.nin}")
+    p.drawString(1.05 * inch, 1.15 * inch, f"Zone: {user.zone}   Unit: {user.unit}")
 
-    p.setFont("Helvetica-Bold", 6)
-    p.drawString(0.1 * inch, 1.0 * inch, "Return to:")
-    p.setFont("Helvetica", 5)
-    p.drawString(0.1 * inch, 0.9 * inch, "Firstcare Health Partners")
-    p.drawString(0.1 * inch, 0.8 * inch, "No 6, Yusuf Mohammed street,")
-    p.drawString(0.1 * inch, 0.7 * inch, "Narayi Highcost, Barnawa, Kaduna")
-    p.drawString(0.1 * inch, 0.6 * inch, "admin@firstcaregroup.com")
+    # Status
+    status_color = (
+        (0.16, 0.64, 0.36) if user.registration_fee_paid else (0.86, 0.07, 0.23)
+    )
+    p.setFont("Helvetica-Bold", 8)
+    p.setFillColorRGB(*status_color)
+    p.drawString(
+        1.05 * inch,
+        1.05 * inch,
+        f"Status: {'ACTIVE' if user.registration_fee_paid else 'PENDING'}",
+    )
+
+    # Footer bar
+    p.setFillColorRGB(0.16, 0.64, 0.36)
+    p.roundRect(0, 0, 3.375 * inch, 0.22 * inch, 12, fill=1, stroke=0)
+    p.setFont("Helvetica", 6)
+    p.setFillColorRGB(1, 1, 1)
+    p.drawString(
+        0.15 * inch,
+        0.12 * inch,
+        "No 6, Yusuf Mohammed street, Narayi Highcost, Barnawa, Kaduna | admin@firstcaregroup.com",
+    )
 
     p.save()
     buffer.seek(0)
