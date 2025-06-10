@@ -160,56 +160,71 @@ def create_qr_code(data: dict):
 
 def generate_id_card(user: User, db_user: User):
     buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=(3.375 * inch, 2.125 * inch))
+    width, height = 3.375 * inch, 2.125 * inch
+    p = canvas.Canvas(buffer, pagesize=(width, height))
 
-    # Background gradient (simulate with two rectangles)
-    p.setFillColorRGB(0.85, 0.97, 0.90)
-    p.roundRect(0, 0, 3.375 * inch, 2.125 * inch, 12, fill=1, stroke=0)
+    # Background
+    p.setFillColorRGB(0.92, 0.98, 0.95)
+    p.roundRect(0, 0, width, height, 14, fill=1, stroke=0)
+
+    # Header bar
+    header_height = 0.32 * inch
     p.setFillColorRGB(0.16, 0.64, 0.36)
-    p.roundRect(
-        0, 2.0 * inch, 3.375 * inch, 0.2 * inch, 12, fill=1, stroke=0
-    )  # Header bar
+    p.roundRect(0, height - header_height, width, header_height, 14, fill=1, stroke=0)
 
     # Logo
-    logo_path = "logo.png"  # Place logo.png in your Backend folder
+    logo_path = "logo.png"
+    logo_size = 0.28 * inch
+    logo_y = height - header_height / 2 - logo_size / 2
     if os.path.exists(logo_path):
         p.drawImage(
             logo_path,
-            0.15 * inch,
-            1.85 * inch,
-            width=0.35 * inch,
-            height=0.35 * inch,
+            0.13 * inch,
+            logo_y,
+            width=logo_size,
+            height=logo_size,
             mask="auto",
         )
 
     # Organization Name
-    p.setFont("Helvetica-Bold", 10)
+    p.setFont("Helvetica-Bold", 11)
     p.setFillColorRGB(1, 1, 1)
-    p.drawString(0.55 * inch, 2.03 * inch, "FIRSTCARE HEALTH PARTNERS")
+    p.drawString(0.45 * inch, height - 0.19 * inch, "FIRSTCARE HEALTH PARTNERS")
 
     # Card Title
     p.setFont("Helvetica", 7)
-    p.setFillColorRGB(0.16, 0.64, 0.36)
-    p.drawString(0.15 * inch, 1.75 * inch, "DIGITAL MEMBER ID CARD")
+    p.setFillColorRGB(1, 1, 1)
+    p.drawString(0.45 * inch, height - 0.31 * inch, "DIGITAL MEMBER ID CARD")
 
     # Photo
+    photo_x = 0.13 * inch
+    photo_y = height - header_height - 1.15 * inch
+    photo_w = 0.85 * inch
+    photo_h = 1.1 * inch
     if user.photo_path and os.path.exists(user.photo_path):
         try:
             img = Image.open(user.photo_path)
-            img = img.resize((80, 100))
+            img = img.resize((int(photo_w), int(photo_h)))
             img_buffer = io.BytesIO()
             img.save(img_buffer, format="PNG")
             img_buffer.seek(0)
             p.drawImage(
                 ImageReader(img_buffer),
-                0.15 * inch,
-                0.95 * inch,
-                width=0.8 * inch,
-                height=1.0 * inch,
+                photo_x,
+                photo_y,
+                width=photo_w,
+                height=photo_h,
                 mask="auto",
             )
         except Exception as e:
             pass
+    else:
+        # Placeholder rectangle if no photo
+        p.setFillColorRGB(0.85, 0.85, 0.85)
+        p.roundRect(photo_x, photo_y, photo_w, photo_h, 6, fill=1, stroke=0)
+        p.setFillColorRGB(0.5, 0.5, 0.5)
+        p.setFont("Helvetica", 7)
+        p.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2, "No Photo")
 
     # QR Code
     qr_data = {
@@ -220,33 +235,42 @@ def generate_id_card(user: User, db_user: User):
         "issue_date": user.issue_date.isoformat(),
     }
     qr_buffer = create_qr_code(qr_data)
+    qr_size = 0.7 * inch
+    qr_x = width - qr_size - 0.13 * inch
+    qr_y = 0.18 * inch
     p.drawImage(
         ImageReader(qr_buffer),
-        2.4 * inch,
-        0.95 * inch,
-        width=0.8 * inch,
-        height=0.8 * inch,
+        qr_x,
+        qr_y,
+        width=qr_size,
+        height=qr_size,
         mask="auto",
     )
 
-    # Member Info
-    p.setFont("Helvetica-Bold", 9)
+    # Member Info (right of photo, left of QR)
+    info_x = photo_x + photo_w + 0.10 * inch
+    info_y = height - header_height - 0.15 * inch
+    line_gap = 0.15 * inch
+
+    p.setFont("Helvetica-Bold", 10)
     p.setFillColorRGB(0.16, 0.64, 0.36)
     p.drawString(
-        1.05 * inch,
-        1.7 * inch,
+        info_x,
+        info_y,
         f"{user.last_name.upper()} {user.first_name} {user.middle_name or ''}".strip(),
     )
 
-    p.setFont("Helvetica", 7)
+    p.setFont("Helvetica", 7.5)
     p.setFillColorRGB(0, 0, 0)
-    p.drawString(1.05 * inch, 1.55 * inch, f"Reg ID: {user.registration_id}")
-    p.drawString(1.05 * inch, 1.45 * inch, f"DOB: {user.date_of_birth}")
+    p.drawString(info_x, info_y - line_gap * 1, f"Reg ID: {user.registration_id}")
+    p.drawString(info_x, info_y - line_gap * 2, f"DOB: {user.date_of_birth}")
     p.drawString(
-        1.05 * inch, 1.35 * inch, f"Sex: {user.sex}   Phone: {user.phone_number}"
+        info_x, info_y - line_gap * 3, f"Sex: {user.sex}   Phone: {user.phone_number}"
     )
-    p.drawString(1.05 * inch, 1.25 * inch, f"NIN: {user.nin}")
-    p.drawString(1.05 * inch, 1.15 * inch, f"Zone: {user.zone}   Unit: {user.unit}")
+    p.drawString(info_x, info_y - line_gap * 4, f"NIN: {user.nin}")
+    p.drawString(
+        info_x, info_y - line_gap * 5, f"Zone: {user.zone}   Unit: {user.unit}"
+    )
 
     # Status
     status_color = (
@@ -255,19 +279,20 @@ def generate_id_card(user: User, db_user: User):
     p.setFont("Helvetica-Bold", 8)
     p.setFillColorRGB(*status_color)
     p.drawString(
-        1.05 * inch,
-        1.05 * inch,
+        info_x,
+        info_y - line_gap * 6,
         f"Status: {'ACTIVE' if user.registration_fee_paid else 'PENDING'}",
     )
 
     # Footer bar
+    footer_height = 0.22 * inch
     p.setFillColorRGB(0.16, 0.64, 0.36)
-    p.roundRect(0, 0, 3.375 * inch, 0.22 * inch, 12, fill=1, stroke=0)
+    p.roundRect(0, 0, width, footer_height, 14, fill=1, stroke=0)
     p.setFont("Helvetica", 6)
     p.setFillColorRGB(1, 1, 1)
-    p.drawString(
-        0.15 * inch,
-        0.12 * inch,
+    p.drawCentredString(
+        width / 2,
+        0.09 * inch,
         "No 6, Yusuf Mohammed street, Narayi Highcost, Barnawa, Kaduna | admin@firstcaregroup.com",
     )
 
