@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - backend_uploads:/app/uploads
+      - backend_cards:/app/cards
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - db
+    networks:
+      - firstcare-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - firstcare-network
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: firstcare_db
+      POSTGRES_USER: firstcare_user
+      POSTGRES_PASSWORD: firstcare_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - firstcare-network
+
+networks:
+  firstcare-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  backend_uploads:
+  backend_cards:
