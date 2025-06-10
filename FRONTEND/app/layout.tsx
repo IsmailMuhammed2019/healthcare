@@ -2,6 +2,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import Image from "next/image"
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -26,7 +27,14 @@ export default function RootLayout({
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <div className="flex justify-between h-16">
                                 <div className="flex items-center">
-                                    <div className="flex-shrink-0">
+                                    <div className="flex-shrink-0 flex items-center gap-2">
+                                        <Image
+                                            src="/logo.png"
+                                            alt="Firstcare Logo"
+                                            width={40}
+                                            height={40}
+                                            priority
+                                        />
                                         <h1 className="text-xl font-bold text-green-600">
                                             Firstcare Health Partners
                                         </h1>
