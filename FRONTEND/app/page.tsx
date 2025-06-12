@@ -1,6 +1,6 @@
 // app/page.tsx
-import MainPage from '@/components/MainPage'
+import LandingPage from '@/components/LandingPage';
 
 export default function Home() {
-    return <MainPage />
+    return <LandingPage />;
 }
