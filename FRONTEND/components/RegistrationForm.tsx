@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm } from '@/node_modules/react-hook-form/dist';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Camera, Upload, User, Phone, MapPin, Users, CreditCard, FileText } from 'lucide-react';

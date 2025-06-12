@@ -24,22 +24,22 @@
                 "name": "next"
             }
         ],
-        "baseUrl": ".",
+        "baseUrl": "",
         "paths": {
             "@/*": [
-                "./*"
+                "*"
             ],
             "@/components/*": [
-                "./components/*"
+                "components/*"
             ],
             "@/lib/*": [
-                "./lib/*"
+                "lib/*"
             ],
             "@/store/*": [
-                "./store/*"
+                "store/*"
             ],
             "@/app/*": [
-                "./app/*"
+                "app/*"
             ]
         }
     },
